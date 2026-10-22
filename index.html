@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScamLens — Link &amp; QR Scam Scanner</title>
+  <meta name="description" content="ScamLens: A mobile-first scam link and QR code scanner featuring a self-implemented local heuristic engine and interactive threat report card.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header with App Title and Progress Indicator -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🛡️</span>
+        <div class="brand-text">
+          <h1 class="brand-title">ScamLens</h1>
+          <span class="brand-subtitle">Heuristic + Threat Intel</span>
+        </div>
+      </div>
+      <div class="step-badge" id="step-badge" aria-live="polite">
+        Step <span id="current-step-num">1</span> of 5
+      </div>
+    </header>
+
+    <!-- Visual Progress Bar -->
+    <div class="progress-track" role="progressbar" id="progress-bar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" aria-label="Analysis Progress">
+      <div class="progress-fill" id="progress-fill" style="width: 20%;"></div>
+    </div>
+
+    <!-- Main Screens Container -->
+    <main class="screens-container">
+
+      <!-- SCREEN 1: LANDING -->
+      <section class="screen active" id="screen-1" aria-labelledby="screen-1-title">
+        <div class="screen-content text-center">
+          <div class="hero-icon-wrapper" aria-hidden="true">
+            <div class="hero-icon-bubble">
+              <span class="large-icon">🔍</span>
+            </div>
+          </div>
+          <h2 id="screen-1-title" class="screen-title">Is that link safe?</h2>
+          <p class="screen-desc">
+            Tricky web links and QR codes in texts or emails can be disguised to steal your money, personal details, or account passwords.
+          </p>
+
+          <div class="pipeline-summary-card">
+            <div class="summary-card-title">How ScamLens Protects You</div>
+            <div class="pipeline-pills">
+              <span class="pill-tag">⚡ Offline Heuristics</span>
+              <span class="pill-tag">🔄 Redirect Tracer</span>
+              <span class="pill-tag">🌐 Threat DBs</span>
+              <span class="pill-tag">📅 WHOIS Age</span>
+            </div>
+          </div>
+
+          <div class="features-preview">
+            <div class="feature-item">
+              <span class="feature-icon" aria-hidden="true">🛡️</span>
+              <div>
+                <strong>Local Heuristic Engine</strong>
+                <p>9 offline rule checks run instantly without sending data to third parties.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon" aria-hidden="true">📊</span>
+              <div>
+                <strong>Interactive Report Card</strong>
+                <p>Get a clear 0-100 risk score and plain-English safety verdict.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon" aria-hidden="true">🔒</span>
+              <div>
+                <strong>Private &amp; Jargon-Free</strong>
+                <p>Built for everyday people without confusing technical terms.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <button type="button" class="btn btn-primary btn-block" id="btn-start">
+            <span>Start Checking</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: INPUT -->
+      <section class="screen" id="screen-2" aria-labelledby="screen-2-title">
+        <div class="screen-content">
+          <div class="screen-header-inline">
+            <span class="mini-badge">Input Pipeline</span>
+            <h2 id="screen-2-title" class="screen-title">Check a link or code</h2>
+          </div>
+          <p class="screen-desc">
+            Paste any suspicious web address, or choose an image of a QR code to run through our detection pipeline.
+          </p>
+
+          <!-- Input Form -->
+          <form id="scanner-form" onsubmit="return false;" novalidate>
+            <div class="form-group">
+              <label for="link-input" class="form-label">Web link address</label>
+              <div class="input-wrapper">
+                <input 
+                  type="text" 
+                  id="link-input" 
+                  class="text-input" 
+                  placeholder="e.g. https://my-bank.com/account" 
+                  autocomplete="off" 
+                  spellcheck="false"
+                  aria-describedby="input-error"
+                >
+                <button type="button" class="btn-clear hidden" id="btn-clear" aria-label="Clear input">✕</button>
+              </div>
+              <p class="error-msg hidden" id="input-error" role="alert">
+                ⚠️ Please enter or paste a web address first so we can check it.
+              </p>
+            </div>
+
+            <!-- Upload QR mock -->
+            <div class="qr-section">
+              <button type="button" class="btn btn-secondary btn-block" id="btn-upload-qr">
+                <span aria-hidden="true">📷</span>
+                <span>Upload QR Image (Mock)</span>
+              </button>
+              <p class="field-hint" id="qr-status-hint">Have a photo of a QR code? Tap above to simulate scanning.</p>
+            </div>
+
+            <!-- Sample Links for Fast Testing -->
+            <div class="quick-samples">
+              <span class="quick-samples-label">Quick Test Scenarios (From Report):</span>
+              <div class="sample-tags">
+                <button type="button" class="tag-btn tag-scam" data-sample="https://paypa1-security.xyz/login">🚨 Typosquatting (paypa1)</button>
+                <button type="button" class="tag-btn tag-scam" data-sample="http://192.241.168.45/account-update">🚨 Raw IP Literal</button>
+                <button type="button" class="tag-btn tag-scam" data-sample="http://verify-free-prize-login.net">🚨 Keyword Scam</button>
+                <button type="button" class="tag-btn tag-suspicious" data-sample="https://bit.ly/claim-gift-2026">⚠️ Shortener (bit.ly)</button>
+                <button type="button" class="tag-btn tag-suspicious" data-sample="http://delivery-status-track.org">⚠️ Insecure (http://)</button>
+                <button type="button" class="tag-btn tag-safe" data-sample="https://www.apple.com/support">✅ Safe (Apple Support)</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="screen-actions">
+          <button type="button" class="btn btn-primary btn-block" id="btn-check">
+            <span>Check Now</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: SCANNING PIPELINE -->
+      <section class="screen" id="screen-3" aria-labelledby="screen-3-title" aria-live="assertive">
+        <div class="screen-content text-center">
+          <!-- Animated Radar Scanner -->
+          <div class="scanner-visual">
+            <div class="scanner-pulse-ring ring-1"></div>
+            <div class="scanner-pulse-ring ring-2"></div>
+            <div class="scanner-pulse-ring ring-3"></div>
+            <div class="scanner-core">
+              <span class="scanner-icon" aria-hidden="true">🔎</span>
+            </div>
+          </div>
+
+          <h2 id="screen-3-title" class="screen-title">Checking this link…</h2>
+          <p class="screen-desc" id="scan-feedback">
+            Running 7-stage threat verification pipeline…
+          </p>
+
+          <div class="scanning-link-preview">
+            <span class="link-label">Analyzing:</span>
+            <span class="link-url-text" id="scanning-url-display">https://example.com</span>
+          </div>
+
+          <!-- 6-Stage Pipeline Checklist (Section 3 of Report) -->
+          <div class="scanner-checklist">
+            <div class="check-item active" id="chk-pipe-1">
+              <span class="chk-icon">⏳</span>
+              <span>1. Local Heuristic Engine (Offline, 9 Rules)</span>
+            </div>
+            <div class="check-item" id="chk-pipe-2">
+              <span class="chk-icon">⏳</span>
+              <span>2. Redirect Tracer (Unshortener Check)</span>
+            </div>
+            <div class="check-item" id="chk-pipe-3">
+              <span class="chk-icon">⏳</span>
+              <span>3. Threat Databases (Safe Browsing &amp; VirusTotal)</span>
+            </div>
+            <div class="check-item" id="chk-pipe-4">
+              <span class="chk-icon">⏳</span>
+              <span>4. WHOIS Domain Age &amp; Registrar Lookup</span>
+            </div>
+            <div class="check-item" id="chk-pipe-5">
+              <span class="chk-icon">⏳</span>
+              <span>5. Destination Page Preview Generator</span>
+            </div>
+            <div class="check-item" id="chk-pipe-6">
+              <span class="chk-icon">⏳</span>
+              <span>6. Compiling Interactive Report Card</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-actions text-center">
+          <p class="scanning-note">Almost done, compiling report card automatically…</p>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: INTERACTIVE REPORT CARD -->
+      <section class="screen" id="screen-4" aria-labelledby="screen-4-title">
+        <div class="screen-content">
+          <!-- Top Verdict Badge & Score Meter -->
+          <div class="report-header-card" id="result-badge-card">
+            <div class="badge-icon-wrapper" id="badge-icon-wrapper" aria-hidden="true">
+              <span class="badge-emoji" id="badge-emoji">🚨</span>
+            </div>
+            <div class="badge-label-container">
+              <div class="verdict-row">
+                <span class="badge-caption">Overall Verdict</span>
+                <span class="risk-score-badge" id="risk-score-badge">Risk: 85/100</span>
+              </div>
+              <h2 id="screen-4-title" class="badge-heading">SCAM</h2>
+            </div>
+          </div>
+
+          <!-- Plain English Reason Box -->
+          <div class="reason-box" id="reason-box">
+            <h3 class="reason-title">Plain-English Verdict</h3>
+            <p class="reason-text" id="result-reason">
+              <!-- Dynamically populated reason -->
+            </p>
+          </div>
+
+          <!-- Redirect Tracer Notice (if applicable) -->
+          <div class="redirect-info-card hidden" id="redirect-info-card">
+            <div class="redirect-header">
+              <span class="redirect-icon" aria-hidden="true">🔄</span>
+              <strong>Redirect Chain Resolved:</strong>
+            </div>
+            <p class="redirect-detail" id="redirect-detail"></p>
+          </div>
+
+          <!-- Inspected Link Summary -->
+          <div class="inspected-link-card">
+            <span class="inspected-label">Web link tested:</span>
+            <p class="inspected-url" id="result-url-display"></p>
+          </div>
+
+          <!-- Modular Interactive Tabs for Report Components -->
+          <div class="report-modules-container">
+            <div class="module-tab-bar" role="tablist">
+              <button type="button" class="module-tab active" id="tab-heuristics" role="tab" aria-selected="true" aria-controls="pane-heuristics">
+                🛡️ Local Heuristics
+              </button>
+              <button type="button" class="module-tab" id="tab-intel" role="tab" aria-selected="false" aria-controls="pane-intel">
+                🌐 Threat &amp; Domain
+              </button>
+              <button type="button" class="module-tab" id="tab-preview" role="tab" aria-selected="false" aria-controls="pane-preview">
+                🖼️ Web Preview
+              </button>
+            </div>
+
+            <!-- TAB PANE 1: LOCAL HEURISTICS (Self-Implemented, No API) -->
+            <div class="module-pane active" id="pane-heuristics" role="tabpanel" aria-labelledby="tab-heuristics">
+              <div class="pane-header">
+                <strong>Offline Heuristic Breakdown (9 Rules)</strong>
+                <span class="tag-no-api">Self-Implemented · No API</span>
+              </div>
+              <div class="heuristics-list" id="heuristics-list">
+                <!-- Dynamically populated 9 heuristic items -->
+              </div>
+            </div>
+
+            <!-- TAB PANE 2: THREAT INTELLIGENCE & WHOIS -->
+            <div class="module-pane" id="pane-intel" role="tabpanel" aria-labelledby="tab-intel" hidden>
+              <div class="pane-header">
+                <strong>Threat Intelligence &amp; WHOIS</strong>
+                <span class="tag-api">Threat DB + WHOIS</span>
+              </div>
+              <div class="intel-cards-grid">
+                <div class="intel-card">
+                  <span class="intel-title">Google Safe Browsing</span>
+                  <p class="intel-val" id="intel-safebrowsing">Checking...</p>
+                </div>
+                <div class="intel-card">
+                  <span class="intel-title">VirusTotal Vendor Score</span>
+                  <p class="intel-val" id="intel-virustotal">Checking...</p>
+                </div>
+                <div class="intel-card">
+                  <span class="intel-title">Domain Longevity</span>
+                  <p class="intel-val" id="intel-domain-age">Checking...</p>
+                </div>
+                <div class="intel-card">
+                  <span class="intel-title">Domain Registrar</span>
+                  <p class="intel-val" id="intel-registrar">Checking...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB PANE 3: DESTINATION PREVIEW -->
+            <div class="module-pane" id="pane-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
+              <div class="pane-header">
+                <strong>Destination Page Preview</strong>
+                <span class="tag-api">Safe Preview · Microlink</span>
+              </div>
+              <div class="preview-card" id="destination-preview-card">
+                <div class="preview-screen-mock" id="preview-screen-mock">
+                  <span class="preview-mock-icon" id="preview-mock-icon">🌐</span>
+                  <span class="preview-mock-tag" id="preview-mock-tag">Visual Preview</span>
+                </div>
+                <div class="preview-details">
+                  <h4 class="preview-title" id="preview-title">Page Title</h4>
+                  <p class="preview-snippet" id="preview-snippet">Page summary...</p>
+                  <span class="preview-target-url" id="preview-target-url">https://example.com</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Action Notice -->
+          <div class="action-advice-box" id="action-advice-box">
+            <span class="advice-icon" id="advice-icon" aria-hidden="true">💡</span>
+            <p class="advice-text" id="advice-text"></p>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <button type="button" class="btn btn-primary btn-block" id="btn-to-final">
+            <span>Continue to Safety Tips</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: FINAL -->
+      <section class="screen" id="screen-5" aria-labelledby="screen-5-title">
+        <div class="screen-content">
+          <div class="final-celebration text-center">
+            <div class="celebration-icon" aria-hidden="true">🎉</div>
+            <h2 id="screen-5-title" class="screen-title">Check complete. Stay safe!</h2>
+            <p class="screen-desc">
+              Taking a few seconds to double check links protects you and your family from online theft.
+            </p>
+          </div>
+
+          <!-- Short Safety Tip Card -->
+          <div class="safety-tip-card">
+            <div class="tip-card-header">
+              <span class="tip-badge">💡 Golden Rule</span>
+              <h3 class="tip-title">When in doubt, don't click</h3>
+            </div>
+            <p class="tip-content">
+              Real companies and banks will never contact you out of the blue asking you to click an urgent link to verify a password or claim money.
+            </p>
+          </div>
+
+          <!-- Helpful Safety Checklist -->
+          <div class="safety-list">
+            <h3 class="safety-list-title">3 Simple Rules to Remember</h3>
+            <div class="safety-item">
+              <span class="safety-num">1</span>
+              <div>
+                <strong>Ignore fake urgency</strong>
+                <p>Scammers want you to panic and click before thinking.</p>
+              </div>
+            </div>
+            <div class="safety-item">
+              <span class="safety-num">2</span>
+              <div>
+                <strong>Go directly to the website</strong>
+                <p>Type the company's real address into your browser yourself.</p>
+              </div>
+            </div>
+            <div class="safety-item">
+              <span class="safety-num">3</span>
+              <div>
+                <strong>Never share secret codes</strong>
+                <p>No safe website will ask you to send your private login code via link.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <button type="button" class="btn btn-primary btn-block" id="btn-restart">
+            <span>Check Another Link</span>
+            <span class="btn-arrow" aria-hidden="true">↺</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- App Footer -->
+    <footer class="app-footer">
+      <span>ScamLens &bull; Link &amp; QR Scam Scanner &bull; Offline Heuristics + Threat Intel</span>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
